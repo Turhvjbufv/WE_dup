@@ -3,7 +3,7 @@
 #include <iostream>
 
 class WE_path {
-  // makes it easier since they are grouped
+  // makes it easier since they are grouped togther
   std::string path_to_workshop{""};
   std::string path_to_myprojects{""};
   std::string list_of_items{""};

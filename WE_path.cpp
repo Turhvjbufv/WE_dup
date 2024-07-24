@@ -1,6 +1,6 @@
 #include "WE_path.h"
 namespace fs = std::filesystem;
-enum answer { no, yes };
+enum answerv1 { no, yes };
 
 WE_path::WE_path() {
   check_path_to_myprojects();

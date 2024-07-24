@@ -521,5 +521,6 @@ bool searchProjects(WE_path &paths, int copy_all_or_choose) {
     }
   }
   // if did not found and or chose to not copy every option
+  cout << "search finished/n" ;
   return return_if_found;
 }
