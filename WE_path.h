@@ -12,7 +12,7 @@ class WE_path {
   int check_length_of_oldpath;
   // keeps the length of workshop so to only add the number of the project to
   // the WE.txt file(and also for checking if its in file)
-  int check_if_changed{0};
+  int projects_added{0};
   // used to check if there are wallaper that were added
   // and the number of them to wallpaper engine
   int copy_or_not_this_session;
@@ -25,9 +25,9 @@ public:
   void constructor_copy_or_not_this_session();
   void set_copy_or_not_this_session(int set);
   int get_copy_or_not_this_session() const;
-  int get_check_if_changed() const;
-  void minus_check_if_changed();
-  void add_check_if_changed();
+  int get_projects_added() const;
+  void minus_projects_added();
+  void add_projects_added();
   int get_check_length_of_oldpath() const;
   std::string get_list_of_items() const;
   void add_list_of_items(std::string);

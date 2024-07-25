@@ -1,6 +1,5 @@
 ﻿#include "WE_path.h"
 #include <cctype>
-#include <iostream>
 #include <string>
 #include <windows.h>
 
@@ -23,35 +22,32 @@ void unpkg(const string &new_path_to_old, const string &new_path_to_projects);
 void run_system_commands(const string &use_to_command);
 void send_to_search(WE_path &paths);
 bool searchProjects(WE_path &paths, int copy_all_or_choose);
+void tolower_loop(string &Tolower);
+string find_title(const string &path, const string &project);
 // project == wallpaper
 int main() {
-
   WE_path paths;
-
-  if (fs::exists("WE.txt") || check_if_file_exist()) {
+  if (check_if_file_exist()) {
+    // check if file exist also returns true in case user wants to add all
+    // currrect wallpapers(first time)
+    // or running the program after the first time(WE.txt exists)
     send_to_search(paths);
     cout << "file found!, checking if updates are needed \n";
     check_if_new_project(paths);
     // checks for new projects
-    // if there are new projects(and user chose to) then copies them and print
-    // the number of projects added
-    // if there are non(that were added to wallpaper engine) then print "nothing
-    // changed"
-    switch (paths.get_check_if_changed()) {
+    switch (paths.get_projects_added()) {
     case 0: {
       cout << "nothing changed";
-      return 0;
     }
     default: {
-      cout << "number of added projects is " << paths.get_check_if_changed();
-      return 0;
+      cout << "number of added projects is " << paths.get_projects_added();
     }
     }
   } else {
-    // run if the function: check_if_file_exist(). returned 0(which means that
-    // the WE.txt file does not exist)(and user chose to record all wallpapers)
-    // this gets all the names of current files in the directory and puts them
-    // in the newly created WE.txt file
+    // run if the function: check_if_file_exist(). returned false and WE.txt
+    // file desnt exist(which means that the user chose to record all
+    // wallpapers) this gets all the names of current files in the directory and
+    // puts them in the newly created WE.txt file
     int dont_make_new_line{0};
     fstream listWE("WE.txt");
     for (const auto &entry :
@@ -145,17 +141,18 @@ void check_if_new_project(WE_path &paths) {
       continue;
     }
     if (transfer_files(new_project, paths, 0)) {
-      paths.add_check_if_changed();
+      paths.add_projects_added();
     }
   }
 }
 
 int transfer_files(const string &new_project_transfer, WE_path &paths,
                    const int choose_override) {
-  string path_to_projects{paths.get_path_to_myprojects() + "\\" +
-                          new_project_transfer};
+
   string path_to_old{paths.get_path_to_workshop() + "\\" +
                      new_project_transfer};
+  string path_to_projects{paths.get_path_to_myprojects() + "\\" +
+                          find_title(path_to_old, new_project_transfer)};
   string path_to_old_json{path_to_old + "\\project.json"};
   // gets the path to folder and copies the project to myproject
   // sets the path for the projects
@@ -172,14 +169,8 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
     // if user choose to copy this session, gets the tile name and asks the user
     // if he want to copy it, will sometimes print strange characters beacuse
     // it only shows ascii ones(basic english and numbers)
-    string title_in_json{""};
-    while (getline(project_name, title_in_json)) {
-      // gets the title
-      size_t pos = title_in_json.find("title");
-      if (pos != string::npos) {
-        break;
-      }
-    }
+    string title_in_json{
+        find_title(paths.get_path_to_workshop(), new_project_transfer)};
 
     cout << "Would you like to copy\n" + title_in_json +
                 "\nEnter 1 to copy or 0 to not copy\n";
@@ -266,7 +257,7 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
       default: {
         // any other number
         cout << "Please Enter again\n" + title_in_json +
-                    "\nwrite 1 if you want to copy and 0 if you don't\n";
+                    "\nWrite 1 if you want to copy and 0 if you don't\n";
         cin >> copy_or_not;
         break;
       }
@@ -286,8 +277,9 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
 }
 int check_if_in_file(const string &new_project_to_check, WE_path &paths,
                      const int &choose_override, const string &title) {
-  if (fs::exists(paths.get_path_to_myprojects() + "\\" +
-                 new_project_to_check)) {
+  if (fs::exists(
+          paths.get_path_to_myprojects() + "\\" +
+          find_title(paths.get_path_to_workshop(), new_project_to_check))) {
     switch (choose_override) {
     case 1: { // this choise only appears when searching
       cout << "This project:\n" + title +
@@ -333,33 +325,32 @@ void copyfiles(const string &path_old_for_file,
                std::filesystem::copy_options::recursive);
 }
 
-void unpkg(const string &new_path_to_old, const string &new_path_to_projects) {
+void unpkg(const string &new_path_to_old, const string &path_to_projects) {
   // gets all the path pkg and zip
   // then uses commands to copy the pkg, unpack it to a zip then uzip it
   string path_to_old_pkg{new_path_to_old + "\\scene.pkg"};
   string current_path{fs::current_path().string()};
-  string path_to_projects_pkg{new_path_to_projects + "\\scene.pkg"};
+  string path_to_projects_pkg{path_to_projects + "\\scene.pkg"};
   string path_to_old_zip(new_path_to_old + "\\scene.zip");
-  string path_to_projects_zip{new_path_to_projects + "\\scene.zip"};
+  string path_to_projects_zip{path_to_projects + "\\scene.zip"};
   string command_to_unpkg{"pkg2zip.exe -pkg2zip \"" + path_to_projects_pkg +
                           "\" " + "\"" + path_to_projects_zip + "\""};
   string command_to_unzip{"tar -xkvf \"" + path_to_projects_zip + "\" -C \"" +
-                          new_path_to_projects + "\""};
-  if (!fs::exists(new_path_to_old + "\\scene.pkg")) {
+                          path_to_projects + "\""};
+  if (!fs::exists(path_to_old_pkg)) {
     // if there is no scene.pkg
     if (fs::exists(new_path_to_old + "\\gifscene.pkg")) {
       // if there is a gifscene.pkg
       path_to_old_pkg = new_path_to_old + "\\gifscene.pkg";
-      path_to_projects_pkg = new_path_to_projects + "\\gifscene.pkg";
+      path_to_projects_pkg = path_to_projects + "\\gifscene.pkg";
       path_to_old_zip = new_path_to_old + "\\gifscene.zip";
-      path_to_projects_zip = new_path_to_projects + "\\gifscene.zip";
+      path_to_projects_zip = path_to_projects + "\\gifscene.zip";
       command_to_unpkg = "pkg2zip.exe -pkg2zip \"" + path_to_projects_pkg +
                          "\" " + "\"" + path_to_projects_zip + "\"";
       command_to_unzip = "tar -xvf \"" + path_to_projects_zip + "\" -C \"" +
-                         new_path_to_projects + "\"";
+                         path_to_projects + "\"";
     } else {
       // if there is no scene.pkg nor gifscene.pkg
-
       return;
     }
   }
@@ -374,8 +365,7 @@ void unpkg(const string &new_path_to_old, const string &new_path_to_projects) {
 }
 
 void run_system_commands(const string &use_to_command) {
-  // creates a child prossesor to run the unzip command
-  // or to run the upkg command
+  // creates a child prossesor to run the unzip and upack commands
   // honestly I barely know what is happening in this function
   // but it works
   cout << use_to_command << " runs"
@@ -413,7 +403,8 @@ void send_to_search(WE_path &paths) {
             "every option or just what you want to copy(will ask you)"
             "\nEnter 0 to skip this(and go over every project)"
             "\nEnter 1 for it to copy every project it finds that matches"
-            "\nEnter 2 for you to choose what to copy(if found 1 or more)";
+            "\nEnter 2 for you to choose what to copy(if found 1 or more)"
+            "\nThis is case insensitive search (bla == BLA)";
     int option;
     cin >> option;
     switch (option) {
@@ -424,20 +415,18 @@ void send_to_search(WE_path &paths) {
     }
     case 1: {
       if (!searchProjects(paths, 1)) {
-        cout << "ERROR project not found probably because a case sensitive "
-                "error(you wrote \"s\" instead of \"S\"\n";
+        cout << "Project not found\n";
       }
       break;
     }
     case 2: {
       if (!searchProjects(paths, 2)) {
-        cout << "ERROR project not found, might be a case sensitive error\n"
-                "or you chose not to copy every option\n";
+        cout << "Project not found or you chose not to copy every time\n";
       }
       break;
     }
     default:
-      cout << " ERROR command not found\n";
+      cout << "ERROR command not found\n";
       break;
     }
   }
@@ -455,10 +444,7 @@ bool searchProjects(WE_path &paths, int copy_all_or_choose) {
   string check_project;
   cin.get();
   getline(cin, check_project);
-  for (auto &c : check_project) {
-    // makes it all lower case to not make it case sensitive
-    c = tolower(c);
-  }
+  tolower_loop(check_project);
   bool return_if_found{false};
   string line_in_json{""};
   for (const auto &entry :
@@ -471,56 +457,63 @@ bool searchProjects(WE_path &paths, int copy_all_or_choose) {
                                       paths.get_check_length_of_oldpath())};
     new_project = {path_of_new_project.substr(
         paths.get_check_length_of_oldpath(), check_length)};
-    string path_to_old{paths.get_path_to_workshop() + "\\" + new_project};
-    string path_to_old_json{path_to_old + "\\project.json"};
-    ifstream project_name(path_to_old_json);
-    while (getline(project_name, line_in_json)) {
-      // TODO add a check for description
-      size_t pos = line_in_json.find("title");
-      if (pos == string::npos) {
-        // if it is not the line with the title
-        continue;
-      }
-      for (auto &c : line_in_json) {
-        // makes it all lower case to not make it case sensitive
-        c = tolower(c);
-      }
-      pos = line_in_json.find(check_project);
-      if (pos != string::npos) {
-        // if found a match
-        return_if_found = true;
-        if (copy_all_or_choose == 2) {
-          paths.set_copy_or_not_this_session(1);
-          // if they chose to be able to choose if to copy or
-          // not(copy_all_or_choose == 2)
-          if (transfer_files(new_project, paths, 1)) {
-            // if it does not exist yet then copy it and
-            // add one to number of added proejcts and insert it to list
-            // then returns the newly added project
-            paths.add_list_of_items(new_project);
-            paths.add_check_if_changed();
-            break;
-          }
-          // if chose to not copy
-          return_if_found = false;
-          break;
-        } else {
-          // if chose to copy all(copy_all_or_choose == 1)
-          if (transfer_files(new_project, paths, 1)) {
-            paths.add_list_of_items(new_project);
-            paths.add_check_if_changed();
-            // if it does not exist yet then copy it and
-            // add one to number of added proejcts and insert it to list
-            // then returns the newly added project
-            break;
-          }
-          // if it does exist
+    if (find_title(paths.get_path_to_workshop(), new_project)) {
+      // if found a match
+      return_if_found = true;
+      if (copy_all_or_choose == 2) {
+        paths.set_copy_or_not_this_session(1);
+        // if they chose to be able to choose if to copy or
+        // not(copy_all_or_choose == 2)
+        if (transfer_files(new_project, paths, 1)) {
+          // if it does not exist yet then copy it and
+          // add one to number of added proejcts and insert it to list
+          // then returns the newly added project
+          paths.add_list_of_items(new_project);
+          paths.add_projects_added();
           break;
         }
+        // if chose to not copy
+        return_if_found = false;
+        break;
+      } else {
+        // if chose to copy all(copy_all_or_choose == 1)
+        if (transfer_files(new_project, paths, 1)) {
+          paths.add_list_of_items(new_project);
+          paths.add_projects_added();
+          // if it does not exist yet then copy it and
+          // add one to number of added proejcts and insert it to list
+          // then returns the newly added project
+          break;
+        }
+        // if it does exist
+        break;
       }
     }
   }
+
   // if did not found and or chose to not copy every option
-  cout << "search finished/n" ;
+  cout << "search finished/n";
   return return_if_found;
+}
+void tolower_loop(string &Tolower) {
+  for (auto &c : Tolower) {
+    // makes it all lower case to not make it case sensitive
+    c = tolower(c);
+  }
+}
+string find_title(const string &path, const string &project) {
+  string json_path{path + "\\" + new_project + "\\project.json"};
+  ifstream project_name(json_path);
+  string line_in_json("");
+  while (getline(project_name, line_in_json)) {
+    if (line_in_json.find("title") == string::npos) {
+      // if it is not the line with the title
+      continue;
+    }
+    tolower_loop(line_in_json);
+    if (line_in_json.find(project) != string::npos) {
+      return line_in_json;
+    }
+  }
+  return nullptr;
 }

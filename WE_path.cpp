@@ -186,9 +186,9 @@ void WE_path::add_list_of_items(std::string add_project) {
 int WE_path::get_check_length_of_oldpath() const {
   return check_length_of_oldpath;
 }
-int WE_path::get_check_if_changed() const { return check_if_changed; }
-void WE_path::add_check_if_changed() { ++check_if_changed; }
-void WE_path::minus_check_if_changed() { --check_if_changed; }
+int WE_path::get_projects_added() const { return projects_added; }
+void WE_path::add_projects_added() { ++projects_added; }
+void WE_path::minus_projects_added() { --projects_added; }
 void WE_path::constructor_copy_or_not_this_session() {
   // if running the program for the first time this session
   std::cout
