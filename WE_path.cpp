@@ -192,19 +192,19 @@ void WE_path::minus_projects_added() { --projects_added; }
 void WE_path::constructor_copy_or_not_this_session() {
   // if running the program for the first time this session
   std::cout
-      << "before we start copying, would you like to be able to choose "
+      << "before we start copying(if needed), would you like to be able to "
+         "choose "
          "what to copy or for the program to just copy everything it "
          "finds that is not copied yet, enter 1 to be able to choose "
          "or 0 to not choose(copy all new wallpapers)\nYou can also "
          "choose 2 which will just record all new wallpapers so that they "
-         "wont show up again in the future"
-         "otherwise\n";
+         "wont show up again in the future unless you use search\n";
 
   std::cin >> copy_or_not_this_session;
   bool to_copy{true};
   while (to_copy) {
     switch (copy_or_not_this_session) {
-    // does the same thing for 0 or 1 or 2( im switch at least)
+    // does the same thing for 0 or 1 or 2(in this switch at least)
     case 0:
     case 1:
     case 2: {
