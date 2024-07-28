@@ -23,53 +23,62 @@ void run_system_commands(const string &use_to_command);
 void send_to_search(WE_path &paths);
 bool search_Projects(WE_path &paths, int copy_all_or_choose);
 void tolower_loop(string &Tolower);
-string find_title(const string &path, const string &project);
+string find_title(const string &path, const string &project,
+                  const string &check_project);
+void bad_input();
 // project == wallpaper
 int main() {
-  WE_path paths;
-  if (check_if_file_exist()) {
-    // check if file exist also returns true in case user wants to add all
-    // currrect wallpapers(first time)
-    // or running the program after the first time(WE.txt exists)
-    cout << "file found!, checking sending you to search...\n";
-    send_to_search(paths);
-    cout << "checking if updates are needed \n";
-    check_for_new_project(paths);
-    switch (paths.get_projects_added()) {
-    case 0: {
-      cout << "nothing changed";
-    }
-    default: {
-      cout << "number of added projects is " << paths.get_projects_added();
-    }
-    }
-  } else {
-    // run if the function: check_if_file_exist(). returned false and WE.txt
-    // file desnt exist(which means that the user chose to record all
-    // wallpapers) this gets all the names of current files in the directory and
-    // puts them in the newly created WE.txt file
-    int dont_make_new_line{0};
-    fstream listWE("WE.txt");
-    for (const auto &entry :
-         fs::directory_iterator(paths.get_path_to_workshop())) {
-
-      string path_of_new_project = entry.path().string();
-      int check_length{static_cast<int>(path_of_new_project.length() -
-                                        paths.get_check_length_of_oldpath())};
-      string new_project = path_of_new_project.substr(
-          paths.get_check_length_of_oldpath(), check_length);
-
-      switch (dont_make_new_line) {
+  try {
+    WE_path paths;
+    if (check_if_file_exist()) {
+      // check if file exist also returns true in case user wants to add all
+      // currrect wallpapers(first time)
+      // or running the program after the first time(WE.txt exists)
+      cout << "file found!, checking sending you to search...\n";
+      send_to_search(paths);
+      cout << "checking if updates are needed \n";
+      check_for_new_project(paths);
+      switch (paths.get_projects_added()) {
       case 0: {
-        listWE << new_project;
-        dont_make_new_line++;
-        continue;
+        cout << "nothing changed";
+        break;
       }
       default: {
-        listWE << "\n" << new_project;
+        cout << "number of added projects is " << paths.get_projects_added();
+        break;
       }
+      }
+    } else {
+      // run if the function: check_if_file_exist(). returned false and WE.txt
+      // file desnt exist(which means that the user chose to record all
+      // wallpapers) this gets all the names of current files in the directory
+      // and puts them in the newly created WE.txt file
+      int dont_make_new_line{0};
+      fstream listWE("WE.txt");
+      for (const auto &entry :
+           fs::directory_iterator(paths.get_path_to_workshop())) {
+
+        string path_of_new_project = entry.path().string();
+        int check_length{static_cast<int>(path_of_new_project.length() -
+                                          paths.get_check_length_of_oldpath())};
+        string new_project = path_of_new_project.substr(
+            paths.get_check_length_of_oldpath(), check_length);
+
+        switch (dont_make_new_line) {
+        case 0: {
+          listWE << new_project;
+          dont_make_new_line++;
+          continue;
+        }
+        default: {
+          listWE << "\n" << new_project;
+        }
+        }
       }
     }
+  } catch (const char *exception) {
+    cout << exception;
+    return -1;
   }
   return 0;
 }
@@ -151,8 +160,9 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
 
   string path_to_old{paths.get_path_to_workshop() + "\\" +
                      new_project_transfer};
-  string path_to_projects{paths.get_path_to_myprojects() + "\\" +
-                          find_title(path_to_old, new_project_transfer)};
+  string path_to_projects{
+      paths.get_path_to_myprojects() + "\\" +
+      find_title(paths.get_path_to_workshop(), new_project_transfer, "")};
   string path_to_old_json{path_to_old + "\\project.json"};
   // gets the path to folder and copies the project to myproject
   // sets the path for the projects
@@ -169,18 +179,24 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
     // if he want to copy it, will sometimes print strange characters beacuse
     // it only shows ascii ones(basic english and numbers)
     string title_in_json{
-        find_title(paths.get_path_to_workshop(), new_project_transfer)};
+        find_title(paths.get_path_to_workshop(), new_project_transfer, "")};
 
     cout << "Would you like to copy\n" + title_in_json +
                 "\nEnter 1 to copy or 0 to not copy\n";
     cin >> copy_or_not;
+    bad_input();
     bool bcopy_or_not{true};
     while (bcopy_or_not) {
+
       switch (copy_or_not) {
       case no: {
-        // 0, chose to not copy
+        // 0, chose to not copy, if it can show up in the future
         // asks the user if he want to see it in future sessions
         // read the cout to know more
+        if (paths.get_list_of_items().find(new_project_transfer) !=
+            string::npos) {
+          return 0;
+        }
         while (true) {
           switch (show_or_not) {
           default: {
@@ -188,9 +204,9 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
               // if not searching
               return 0;
             }
-            if (choose_override &&
-                !check_if_in_file(new_project_transfer, paths, choose_override,
-                                  title_in_json)) {
+            if ((choose_override &&
+                 !check_if_in_file(new_project_transfer, paths, choose_override,
+                                   title_in_json))) {
               // if searching but chose to not potentally ovderride
               return 0;
             }
@@ -211,6 +227,7 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
                        "1 is only for this wallpaper, any other number will "
                        "result in this showing up again)\n";
             cin >> show_or_not;
+            bad_input();
             break;
           }
           case no: {
@@ -252,6 +269,7 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
         cout << "Please Enter again\n" + title_in_json +
                     "\nWrite 1 if you want to copy and 0 if you don't\n";
         cin >> copy_or_not;
+        bad_input();
         break;
       }
       }
@@ -272,7 +290,7 @@ int check_if_in_file(const string &new_project_to_check, WE_path &paths,
                      const int &choose_override, const string &title) {
   if (fs::exists(
           paths.get_path_to_myprojects() + "\\" +
-          find_title(paths.get_path_to_workshop(), new_project_to_check))) {
+          find_title(paths.get_path_to_workshop(), new_project_to_check, ""))) {
     switch (choose_override) {
     case 1: {
       // this choise only appears when searching
@@ -282,6 +300,7 @@ int check_if_in_file(const string &new_project_to_check, WE_path &paths,
                   "not:\n";
       int Continue{0};
       cin >> Continue;
+      bad_input();
       bool overriding{true};
       while (overriding) {
         switch (Continue) {
@@ -401,6 +420,7 @@ void send_to_search(WE_path &paths) {
             "\nThis is case insensitive search (bla == BLA)";
     int option;
     cin >> option;
+    bad_input();
     switch (option) {
       // didnt put enum since it does not match
     case 0: {
@@ -453,7 +473,9 @@ bool search_Projects(WE_path &paths, int copy_all_or_choose) {
                                       paths.get_check_length_of_oldpath())};
     new_project = {path_of_new_project.substr(
         paths.get_check_length_of_oldpath(), check_length)};
-    if (find_title(paths.get_path_to_workshop(), new_project)) {
+    string temp_check_project =
+        find_title(paths.get_path_to_workshop(), new_project, check_project);
+    if (temp_check_project != "") {
       // if found a match
       return_if_found = true;
       if (copy_all_or_choose == 2) {
@@ -466,11 +488,9 @@ bool search_Projects(WE_path &paths, int copy_all_or_choose) {
           // then returns the newly added project
           paths.add_list_of_items(new_project);
           paths.add_projects_added();
-          break;
         }
         // if chose to not copy
         return_if_found = false;
-        break;
       } else {
         // if chose to copy all(copy_all_or_choose == 1)
         if (transfer_files(new_project, paths, 1)) {
@@ -479,10 +499,8 @@ bool search_Projects(WE_path &paths, int copy_all_or_choose) {
           // if it does not exist yet then copy it and
           // add one to number of added proejcts and insert it to list
           // then returns the newly added project
-          break;
         }
         // if it does exist
-        break;
       }
     }
   }
@@ -497,8 +515,9 @@ void tolower_loop(string &Tolower) {
     c = tolower(c);
   }
 }
-string find_title(const string &path, const string &project) {
-  string json_path{path + "\\" + new_project + "\\project.json"};
+string find_title(const string &path, const string &project,
+                  const string &check_project) {
+  string json_path{path + "\\" + project + "\\project.json"};
   ifstream project_name(json_path);
   string line_in_json("");
   while (getline(project_name, line_in_json)) {
@@ -507,9 +526,16 @@ string find_title(const string &path, const string &project) {
       continue;
     }
     tolower_loop(line_in_json);
-    if (line_in_json.find(project) != string::npos) {
+    if (check_project == "" ||
+        line_in_json.find(check_project) != string::npos) {
+      line_in_json = line_in_json.substr(12, line_in_json.size() - 14);
       return line_in_json;
     }
   }
-  return nullptr;
+  return "";
+}
+void bad_input() {
+  if (cin.fail()) {
+    throw "ERROR -- You did not enter an integer";
+  }
 }

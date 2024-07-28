@@ -5,6 +5,7 @@ enum answerv1 { no, yes };
 WE_path::WE_path() {
   check_path_to_myprojects();
   check_path_to_workshop();
+  add_lines_of_WE();
 }
 void WE_path::add_lines_of_WE() {
   if (!fs::exists("WE.txt")) {
@@ -43,6 +44,7 @@ void WE_path::check_path_to_myprojects() {
 
       int yes_or_no_myprojects{};
       std::cin >> yes_or_no_myprojects;
+      void bad_input();
       while (yes_or_no_myprojects) {
         switch (yes_or_no_myprojects) {
         case no: {
@@ -118,6 +120,7 @@ void WE_path::check_path_to_workshop() {
                    "\nOr 0 if it is not/you want to choose a different path\n";
       int yes_or_no_workshop{};
       std::cin >> yes_or_no_workshop;
+      void bad_input();
       while (yes_or_no_workshop) {
         switch (yes_or_no_workshop) {
         case no: {
@@ -199,8 +202,9 @@ void WE_path::constructor_copy_or_not_this_session() {
          "or 0 to not choose(copy all new wallpapers)\nYou can also "
          "choose 2 which will just record all new wallpapers so that they "
          "wont show up again in the future unless you use search\n";
-
+  std::cin.get();
   std::cin >> copy_or_not_this_session;
+  void bad_input();
   bool to_copy{true};
   while (to_copy) {
     switch (copy_or_not_this_session) {
@@ -216,6 +220,8 @@ void WE_path::constructor_copy_or_not_this_session() {
           << " ERROR command not found\nPlease enter 0 to not "
              "choose if to copy, 1 to choose to record or add or \"skip\" "
              "and 2 to record all";
+      std::cin >> copy_or_not_this_session;
+      void bad_input();
       break;
     }
   }

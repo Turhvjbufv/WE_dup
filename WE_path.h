@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
+void bad_input();
 class WE_path {
   // makes it easier since they are grouped togther
   std::string path_to_workshop{""};
