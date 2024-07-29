@@ -25,6 +25,7 @@ bool search_Projects(WE_path &paths, int copy_all_or_choose);
 void tolower_loop(string &Tolower);
 string find_title(const string &path, const string &project,
                   const string &check_project);
+void add_to_WE(const string &project, const string &title);
 void bad_input();
 // project == wallpaper
 int main() {
@@ -54,7 +55,7 @@ int main() {
       // wallpapers) this gets all the names of current files in the directory
       // and puts them in the newly created WE.txt file
       int dont_make_new_line{0};
-      fstream listWE("WE.txt");
+
       for (const auto &entry :
            fs::directory_iterator(paths.get_path_to_workshop())) {
 
@@ -66,12 +67,18 @@ int main() {
 
         switch (dont_make_new_line) {
         case 0: {
-          listWE << new_project;
+          fstream listWE("WE.txt");
+          string title{
+              find_title(paths.get_path_to_workshop(), new_project, "")};
+          listWE << new_project << "-" << title;
           dont_make_new_line++;
+          listWE.close();
           continue;
         }
         default: {
-          listWE << "\n" << new_project;
+          string title{
+              find_title(paths.get_path_to_workshop(), new_project, "")};
+          add_to_WE(new_project, title);
         }
         }
       }
@@ -144,9 +151,8 @@ void check_for_new_project(WE_path &paths) {
 
     if (paths.get_copy_or_not_this_session() == 2) {
       // if wants to only record all new wallpapers
-      fstream listWE("WE.txt", ios::app);
-      listWE << "\n" << new_project;
-      listWE.close();
+      string title{find_title(paths.get_path_to_workshop(), new_project, "")};
+      add_to_WE(new_project, title);
       continue;
     }
     if (transfer_files(new_project, paths, 0)) {
@@ -160,9 +166,9 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
 
   string path_to_old{paths.get_path_to_workshop() + "\\" +
                      new_project_transfer};
-  string path_to_projects{
-      paths.get_path_to_myprojects() + "\\" +
+  string title{
       find_title(paths.get_path_to_workshop(), new_project_transfer, "")};
+  string path_to_projects{paths.get_path_to_myprojects() + "\\" + title};
   string path_to_old_json{path_to_old + "\\project.json"};
   // gets the path to folder and copies the project to myproject
   // sets the path for the projects
@@ -237,9 +243,7 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
           case yes: {
             // 1(chose that this wallpaper will NOT show up in future
             //  "scan" sessions) this puts it in WE.txt file to record it
-            fstream listWE2("WE.txt", ios::app);
-            listWE2 << "\n" << new_project_transfer;
-            listWE2.close();
+            add_to_WE(new_project_transfer, title);
             return 0;
           }
           case always_no: {
@@ -250,9 +254,7 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
           case always_yes: {
             // 3(if user chooses not to copy a wallpaper always make it NOT show
             // up in future sessions unless using search)
-            fstream listWE2("WE.txt", ios::app);
-            listWE2 << "\n" << new_project_transfer;
-            listWE2.close();
+            add_to_WE(new_project_transfer, title);
             return 0;
           }
           }
@@ -277,9 +279,7 @@ int transfer_files(const string &new_project_transfer, WE_path &paths,
   }
   }
   // puts the newproject into added projects(records them in WE.txt)
-  ofstream listWE2("WE.txt", ios::app);
-  listWE2 << "\n" << new_project_transfer;
-  listWE2.close();
+  add_to_WE(new_project_transfer, title);
   // calls the function to copy the folder
   copy_files(path_to_old, path_to_projects);
   // calls the function to upack the pkg file if there is one
@@ -538,4 +538,9 @@ void bad_input() {
   if (cin.fail()) {
     throw "ERROR -- You did not enter an integer";
   }
+}
+void add_to_WE(const string &project, const string &title) {
+  fstream listWE2("WE.txt", ios::app);
+  listWE2 << "\n" << project << "-" << title;
+  listWE2.close();
 }

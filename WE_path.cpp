@@ -28,9 +28,7 @@ void WE_path::add_lines_of_WE() {
 void WE_path::check_path_to_myprojects() {
   if (!fs::exists("WE_path_to_myprojects.txt")) {
     std::cout << "file does not exist, creating file...\n";
-    std::ofstream listWE_create_the_file_if_doesnt_exist;
-    listWE_create_the_file_if_doesnt_exist.open("WE_path_to_workshop.txt");
-    listWE_create_the_file_if_doesnt_exist.close();
+
     if (std::filesystem::exists(
             "C:\\Program Files (x86)\\Steam\\SteamApps\\common\\wallpaper_"
             "engine\\projects\\myprojects") == 1) {
@@ -103,9 +101,6 @@ void WE_path::check_path_to_myprojects() {
 void WE_path::check_path_to_workshop() {
   if (!fs::exists("WE_path_to_workshop.txt")) {
     std::cout << "file does not exist, creating file...\n";
-    std::ofstream listWE_create_the_file_if_doesnt_exist;
-    listWE_create_the_file_if_doesnt_exist.open("WE_path_to_workshop.txt");
-    listWE_create_the_file_if_doesnt_exist.close();
 
     // if does not exist
     if (std::filesystem::exists(
